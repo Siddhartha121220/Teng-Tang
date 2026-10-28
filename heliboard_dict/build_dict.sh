@@ -9,7 +9,7 @@
 # Usage: ./build_dict.sh <path/to/HeliBoard> <path/to/xxx_meta.json> <out.dict> <locale e.g. te-Latn> <description>
 # Needs one prior `./gradlew assembleDebug` in HeliBoard (for its compiled makedict classes).
 set -euo pipefail
-HB=$1; META=$2; OUT=$3; LOC=$4; DESC=$5
+HB=$(realpath "$1"); META=$(realpath "$2"); OUT=$3; LOC=$4; DESC=$5
 cd "$(dirname "$0")"
 SDK=${ANDROID_HOME:-$HOME/Android/Sdk}
 CLS="$HB/app/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes:$HB/app/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes"
