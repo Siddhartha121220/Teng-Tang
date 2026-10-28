@@ -1,0 +1,26 @@
+# ---- private: raw chats, contacts, photos ----
+chats/
+WhatsApp Chat with*
+WhatsApp Image*
+dropped_not_tenglish.txt
+
+# ---- private: real-chat datasets (synthetic CSV is fine to share) ----
+tenglish_train*.csv
+
+# ---- private: trained models (meta json stores training sentences) ----
+models/
+*.zip
+*.safetensors
+
+# ---- private: outputs derived from the chats ----
+heliboard_dict/*.tsv
+heliboard_dict/*.dict
+heliboard_dict/out/
+heliboard_dict/stubsout/
+
+# ---- local notes / tooling ----
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.vscode/
+.idea/

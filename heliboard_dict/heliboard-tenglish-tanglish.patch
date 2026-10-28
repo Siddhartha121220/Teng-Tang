@@ -1,0 +1,144 @@
+diff --git a/app/src/main/assets/locale_key_texts/ta-Latn.txt b/app/src/main/assets/locale_key_texts/ta-Latn.txt
+new file mode 100644
+index 0000000..b77e1c8
+--- /dev/null
++++ b/app/src/main/assets/locale_key_texts/ta-Latn.txt
+@@ -0,0 +1,2 @@
++[tlds]
++in
+diff --git a/app/src/main/assets/locale_key_texts/te-Latn.txt b/app/src/main/assets/locale_key_texts/te-Latn.txt
+new file mode 100644
+index 0000000..b77e1c8
+--- /dev/null
++++ b/app/src/main/assets/locale_key_texts/te-Latn.txt
+@@ -0,0 +1,2 @@
++[tlds]
++in
+diff --git a/app/src/main/java/helium314/keyboard/keyboard/internal/keyboard_parser/LocaleKeyboardInfos.kt b/app/src/main/java/helium314/keyboard/keyboard/internal/keyboard_parser/LocaleKeyboardInfos.kt
+index da75a51..e71695e 100644
+--- a/app/src/main/java/helium314/keyboard/keyboard/internal/keyboard_parser/LocaleKeyboardInfos.kt
++++ b/app/src/main/java/helium314/keyboard/keyboard/internal/keyboard_parser/LocaleKeyboardInfos.kt
+@@ -1,6 +1,8 @@
+ // SPDX-License-Identifier: GPL-3.0-only
+ package helium314.keyboard.keyboard.internal.keyboard_parser
+ 
++import helium314.keyboard.latin.utils.ScriptUtils
++import helium314.keyboard.latin.utils.ScriptUtils.script
+ import android.content.Context
+ import helium314.keyboard.keyboard.Key
+ import helium314.keyboard.keyboard.KeyboardElement
+@@ -35,11 +37,11 @@ class LocaleKeyboardInfos(dataStream: InputStream?, locale: Locale) {
+     val currencyKey = getCurrencyKey(locale)
+     var localizedNumberKeys: List<String>? = null
+         private set
+-    val hasZwnjKey = when (locale.language) { // todo: move to the info file
++    val hasZwnjKey = locale.script() != ScriptUtils.SCRIPT_LATIN && when (locale.language) { // todo: move to the info file
+         "fa", "ne", "kn", "te" -> true
+         else -> false
+     }
+-    val labelFlags = when (locale.language) { // todo: move to the info file
++    val labelFlags = if (locale.script() == ScriptUtils.SCRIPT_LATIN) 0 else when (locale.language) { // todo: move to the info file
+         "hy", "ar", "be", "fa", "hi", "lo", "mr", "ne", "th", "ur" -> Key.LABEL_FLAGS_FONT_NORMAL
+         "km", "ml", "si", "ta", "te" -> Key.LABEL_FLAGS_FONT_NORMAL or Key.LABEL_FLAGS_AUTO_X_SCALE
+         "kn" -> Key.LABEL_FLAGS_FONT_NORMAL or Key.LABEL_FLAGS_AUTO_X_SCALE or Key.LABEL_FLAGS_FOLLOW_KEY_LETTER_RATIO
+@@ -267,7 +269,7 @@ class LocaleKeyboardInfos(dataStream: InputStream?, locale: Locale) {
+                 return ruble
+             if (locale.country == "LK" || locale.country == "BD")
+                 return genericCurrencyKey(getCurrency(locale))
+-            if (locale.country != "IN" && locale.language == "ta")
++            if (locale.country != "IN" && locale.language == "ta" && locale.script() != ScriptUtils.SCRIPT_LATIN)
+                 return genericCurrencyKey("௹")
+             if (locale.country == "IN" || locale.language.matches("hi|kn|ml|mr|ta|te|gu".toRegex()))
+                 return rupee
+diff --git a/app/src/main/java/helium314/keyboard/keyboard/internal/keyboard_parser/floris/TextKeyData.kt b/app/src/main/java/helium314/keyboard/keyboard/internal/keyboard_parser/floris/TextKeyData.kt
+index e0ebc38..8be4c53 100644
+--- a/app/src/main/java/helium314/keyboard/keyboard/internal/keyboard_parser/floris/TextKeyData.kt
++++ b/app/src/main/java/helium314/keyboard/keyboard/internal/keyboard_parser/floris/TextKeyData.kt
+@@ -146,7 +146,7 @@ sealed interface KeyData : AbstractKeyData {
+ 
+         private fun getStringInLocale(id: Int, params: KeyboardParams): String {
+             // todo: hi-Latn strings instead of this workaround?
+-            val locale = if (params.mId.locale.toLanguageTag() == "hi-Latn") "en_IN".constructLocale()
++            val locale = if (params.mId.locale.toLanguageTag() in setOf("hi-Latn", "te-Latn", "ta-Latn")) "en_IN".constructLocale()
+             else params.mId.locale
+             return Settings.getInstance().getInLocale(id, locale)
+         }
+diff --git a/app/src/main/java/helium314/keyboard/latin/common/LocaleUtils.kt b/app/src/main/java/helium314/keyboard/latin/common/LocaleUtils.kt
+index a57ff40..942cb6c 100644
+--- a/app/src/main/java/helium314/keyboard/latin/common/LocaleUtils.kt
++++ b/app/src/main/java/helium314/keyboard/latin/common/LocaleUtils.kt
+@@ -188,6 +188,8 @@ object LocaleUtils {
+             "en-GB" -> R.string.subtype_en_GB
+             "es-US" -> R.string.subtype_es_US
+             "hi-Latn" -> R.string.subtype_hi_Latn
++            "te-Latn" -> R.string.subtype_te_Latn
++            "ta-Latn" -> R.string.subtype_ta_Latn
+             "sr-Latn" -> R.string.subtype_sr_Latn
+             "mns" -> R.string.subtype_mns
+             "tok" -> R.string.subtype_tok
+diff --git a/app/src/main/res/values/donottranslate.xml b/app/src/main/res/values/donottranslate.xml
+index 5a7f4e5..bd197c7 100644
+--- a/app/src/main/res/values/donottranslate.xml
++++ b/app/src/main/res/values/donottranslate.xml
+@@ -9,6 +9,8 @@
+     <!-- Subtype locale whose name should be displayed in Locale.ROOT. -->
+     <string-array name="subtype_locale_displayed_in_root_locale">
+         <item>hi-Latn</item>
++        <item>te-Latn</item>
++        <item>ta-Latn</item>
+         <item>mns</item>
+         <item>dru</item>
+         <item>xdq</item>
+@@ -17,6 +19,8 @@
+     <!-- Display names for language tags in subtype_locale_displayed_in_root_locale -->
+     <string-array name="subtype_locale_displayed_in_root_locale_display_names">
+         <item>Hinglish</item>
++        <item>Tenglish</item>
++        <item>Tanglish</item>
+         <item>Ма̄ньси</item>
+         <item>ХӀурухъла лугъат</item>
+         <item>Хайдаҡӏла</item>
+diff --git a/app/src/main/res/values/strings.xml b/app/src/main/res/values/strings.xml
+index 41445eb..98c6aec 100644
+--- a/app/src/main/res/values/strings.xml
++++ b/app/src/main/res/values/strings.xml
+@@ -447,6 +447,10 @@
+     <string name="subtype_sr_Latn">Serbian (Latin)</string>
+     <!-- Description for Hinglish (https://en.wikipedia.org/wiki/Hinglish) keyboard subtype -->
+     <string name="subtype_hi_Latn">Hinglish</string>
++    <!-- Description for Tenglish (romanized Telugu-English) keyboard subtype -->
++    <string name="subtype_te_Latn">Tenglish</string>
++    <!-- Description for Tanglish (romanized Tamil-English) keyboard subtype -->
++    <string name="subtype_ta_Latn">Tanglish</string>
+     <!-- Description for Mansi (https://en.wikipedia.org/wiki/Mansi_languages) keyboard subtype -->
+     <string name="subtype_mns">Mansi</string>
+     <!-- Description for Kaitag (https://en.wikipedia.org/wiki/Kaitag_language) keyboard subtype -->
+diff --git a/app/src/main/res/xml/method.xml b/app/src/main/res/xml/method.xml
+index cd1067b..533eddf 100644
+--- a/app/src/main/res/xml/method.xml
++++ b/app/src/main/res/xml/method.xml
+@@ -492,6 +492,24 @@
+         android:imeSubtypeExtraValue="AsciiCapable,EmojiCapable"
+         android:isAsciiCapable="true"
+     />
++    <subtype android:icon="@drawable/ic_ime_switcher"
++        android:label="@string/subtype_te_Latn"
++        android:subtypeId="0x7e1e6c15"
++        android:imeSubtypeLocale="te_ZZ"
++        android:languageTag="te-Latn"
++        android:imeSubtypeMode="keyboard"
++        android:imeSubtypeExtraValue="AsciiCapable,EmojiCapable"
++        android:isAsciiCapable="true"
++    />
++    <subtype android:icon="@drawable/ic_ime_switcher"
++        android:label="@string/subtype_ta_Latn"
++        android:subtypeId="0x7a1a6c15"
++        android:imeSubtypeLocale="ta_ZZ"
++        android:languageTag="ta-Latn"
++        android:imeSubtypeMode="keyboard"
++        android:imeSubtypeExtraValue="AsciiCapable,EmojiCapable"
++        android:isAsciiCapable="true"
++    />
+     <subtype android:icon="@drawable/ic_ime_switcher"
+         android:label="@string/subtype_generic"
+         android:subtypeId="0x35b7526a"

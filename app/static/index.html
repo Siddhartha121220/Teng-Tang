@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tanglish Autocomplete — Editorial Heritage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #F7F5F0;
+      --surface: #FFFFFF;
+      --text: #2C2A29;
+      --text-light: #8C8985;
+      --ghost-grad: linear-gradient(135deg, #E07A5F 0%, #8D7A9E 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Google Sans', 'Roboto', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8vh 20px 40px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Subtle Noise Overlay */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.04;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: multiply;
+    }
+
+    /* Faint geometric watermark */
+    .watermark {
+      position: fixed;
+      bottom: -15vw;
+      right: -10vw;
+      width: 50vw;
+      height: 50vw;
+      border: 1px solid rgba(44, 42, 41, 0.03);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .watermark::before {
+      content: "";
+      position: absolute;
+      inset: 10%;
+      border: 1px solid rgba(44, 42, 41, 0.03);
+      border-radius: 50%;
+    }
+
+    .watermark::after {
+      content: "";
+      position: absolute;
+      inset: 22%;
+      border: 1px dashed rgba(44, 42, 41, 0.04);
+      border-radius: 50%;
+    }
+
+    /* Container */
+    .container {
+      position: relative;
+      z-index: 5;
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    h1 {
+      font-family: 'Google Sans', 'Roboto', sans-serif;
+      font-size: 3.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      font-size: 0.95rem;
+      color: var(--text-light);
+      font-weight: 400;
+      letter-spacing: 0.02em;
+    }
+
+    /* Editor Card */
+    .editor-card {
+      background: var(--surface);
+      border-radius: 28px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.02);
+      padding: 48px;
+      display: flex;
+      flex-direction: column;
+      min-height: 450px;
+      transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .editor-card:focus-within {
+      transform: translateY(-4px);
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.03);
+    }
+
+    /* Custom Input Area wrapper */
+    .editor-container {
+      position: relative;
+      flex-grow: 1;
+      font-size: 1.35rem;
+      line-height: 1.7;
+      font-weight: 300;
+      cursor: text;
+    }
+
+    /* Base styles shared by textarea and overlay to ensure perfect alignment */
+    #editor,
+    #overlay {
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      font-weight: inherit;
+      padding: 0;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-y: auto;
+    }
+
+    /* The transparent textarea trick for perfect native editing */
+    #editor {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      resize: none;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: transparent;
+      caret-color: var(--text);
+      z-index: 2;
+    }
+
+    #editor::placeholder {
+      color: var(--text-light);
+      opacity: 0.5;
+    }
+
+    #editor::selection {
+      background: rgba(224, 122, 95, 0.2);
+      color: transparent;
+    }
+
+    /* The visual overlay */
+    #overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      color: var(--text);
+    }
+
+    .ghost-text {
+      background: var(--ghost-grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-style: italic;
+      font-weight: 400;
+      opacity: 0.9;
+    }
+
+    /* Footer status */
+    .card-footer {
+      margin-top: 30px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(44, 42, 41, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-light);
+      font-weight: 400;
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: #E07A5F;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .pulse-dot.active {
+      opacity: 1;
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(224, 122, 95, 0.6);
+      }
+
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 8px rgba(224, 122, 95, 0);
+      }
+
+      100% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(224, 122, 95, 0);
+      }
+    }
+
+    #status-msg {
+      transition: color 0.3s;
+    }
+
+    #status-msg.generating {
+      color: #E07A5F;
+    }
+
+    /* Suggestions Container */
+    #suggestions-box {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+      min-height: 42px;
+      /* Prevent layout shift */
+    }
+
+    .suggestion-chip {
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: var(--bg);
+      border: 1px solid rgba(44, 42, 41, 0.1);
+      color: var(--text);
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .suggestion-chip:hover {
+      background: rgba(224, 122, 95, 0.1);
+      border-color: #E07A5F;
+    }
+
+    .suggestion-chip.active {
+      background: #E07A5F;
+      color: white;
+      border-color: #E07A5F;
+    }
+
+    /* Language switch */
+    .lang-switch {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: -16px;
+    }
+
+    .lang-btn {
+      padding: 8px 20px;
+      border-radius: 20px;
+      background: var(--surface);
+      border: 1px solid rgba(44, 42, 41, 0.1);
+      color: var(--text-light);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lang-btn:hover {
+      border-color: #E07A5F;
+    }
+
+    .lang-btn.active {
+      background: #E07A5F;
+      color: white;
+      border-color: #E07A5F;
+    }
+
+    /* Diagrams */
+    .diagrams {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .diagram-card {
+      background: var(--surface);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.03), 0 4px 12px rgba(0, 0, 0, 0.02);
+      padding: 28px;
+    }
+
+    .diagram-card h2 {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-light);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .diagram-card img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="watermark"></div>
+
+  <div class="container">
+    <header>
+      <h1>Tanglish / Tenglish Autocomplete</h1>
+      <p class="subtitle">A Modern Editorial Autocomplete Experience</p>
+    </header>
+
+    <div class="lang-switch">
+      <button class="lang-btn active" data-lang="tanglish">Tanglish</button>
+      <button class="lang-btn" data-lang="tenglish">Tenglish</button>
+    </div>
+
+    <div class="editor-card">
+      <div class="editor-container">
+        <!-- Textarea handles actual input and selection natively -->
+        <textarea id="editor" spellcheck="false" placeholder="Begin crafting your narrative..."></textarea>
+        <!-- Overlay precisely duplicates the text and appends the inline ghost suggestion -->
+        <div id="overlay"><span id="text-rendered"></span></div>
+      </div>
+
+      <div id="suggestions-box"></div>
+
+      <div class="card-footer">
+        <div class="status-left">
+          <div class="pulse-dot" id="pulse-indicator"></div>
+          <span id="status-msg">Ready</span>
+        </div>
+        <span id="word-count">0 words</span>
+      </div>
+    </div>
+
+    <div class="diagrams">
+      <div class="diagram-card">
+        <h2>Flow of a user request</h2>
+        <img src="/static/flow-diagram.jpg" alt="Flow of user request: browser sends typed text to FastAPI, which asks the hybrid suggester for suggestions" />
+      </div>
+      <div class="diagram-card">
+        <h2>Training pipeline</h2>
+        <img src="/static/architecture-diagram.jpg" alt="Training pipeline: Tanglish/Tenglish dataset is cleaned and tokenized, then split into an n-gram model and a fine-tuned DistilGPT2, combined into the hybrid suggester" />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const editor = document.getElementById('editor');
+    const textRendered = document.getElementById('text-rendered');
+    const wordCount = document.getElementById('word-count');
+    const statusMsg = document.getElementById('status-msg');
+    const pulseIndicator = document.getElementById('pulse-indicator');
+    const suggestionsBox = document.getElementById('suggestions-box');
+
+    let debounceTimer = null;
+    let currentSuggestions = [];
+    let selectedIndex = 0;
+    let currentLanguage = 'tanglish';
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentLanguage = btn.dataset.lang;
+        clearSuggestions();
+        setStatus('Ready');
+      });
+    });
+
+    // Sync textarea text exactly to overlay
+    function updateOverlay() {
+      // We append a zero-width space if it ends with a newline to ensure the layout engine
+      // renders the trailing newline height in the div exactly like the textarea does.
+      let val = editor.value;
+      if (val.endsWith('\n')) val += ' ';
+      textRendered.textContent = val;
+
+      // Calculate word count
+      const text = editor.value.trim();
+      const words = text ? text.split(/\s+/).length : 0;
+      wordCount.textContent = `${words} word${words !== 1 ? 's' : ''}`;
+    }
+
+    // Scroll sync so overlay matches textarea scroll position
+    editor.addEventListener('scroll', () => {
+      document.getElementById('overlay').scrollTop = editor.scrollTop;
+      document.getElementById('overlay').scrollLeft = editor.scrollLeft;
+    });
+
+    // Handle typing events
+    editor.addEventListener('input', () => {
+      clearSuggestions();
+      updateOverlay();
+
+      clearTimeout(debounceTimer);
+      const val = editor.value;
+
+      // Only trigger autocomplete if the cursor is exactly at the end of the input
+      if (val.trim().length >= 2 && editor.selectionStart === val.length) {
+        debounceTimer = setTimeout(() => fetchSuggestion(val), 400);
+      } else {
+        setStatus('Ready');
+      }
+    });
+
+    function applySuggestion(suggestionText) {
+      let val = editor.value;
+      const endsWithSpace = /\s$/.test(val);
+
+      if (endsWithSpace) {
+        val += suggestionText + " ";
+      } else {
+        // Replace last partial word
+        val = val.replace(/[^\s]+$/, suggestionText + " ");
+      }
+
+      editor.value = val;
+      clearSuggestions();
+      updateOverlay();
+
+      editor.selectionStart = editor.selectionEnd = editor.value.length;
+      editor.focus();
+    }
+
+    // Handle autocomplete acceptance
+    editor.addEventListener('keydown', (e) => {
+      if (currentSuggestions.length > 0) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          applySuggestion(currentSuggestions[selectedIndex]);
+        }
+      }
+    });
+
+    function renderSuggestions(suggestions) {
+      suggestionsBox.innerHTML = '';
+      currentSuggestions = suggestions;
+      selectedIndex = 0; // Default select top suggestion
+
+      suggestions.forEach((sug, idx) => {
+        const chip = document.createElement('div');
+        chip.className = 'suggestion-chip';
+        if (idx === 0) chip.classList.add('active');
+        chip.textContent = sug;
+        chip.onclick = () => applySuggestion(sug);
+        suggestionsBox.appendChild(chip);
+      });
+    }
+
+    function clearSuggestions() {
+      currentSuggestions = [];
+      suggestionsBox.innerHTML = '';
+    }
+
+    function setStatus(msg, isGenerating = false) {
+      statusMsg.textContent = msg;
+      if (isGenerating) {
+        pulseIndicator.classList.add('active');
+        statusMsg.classList.add('generating');
+      } else {
+        pulseIndicator.classList.remove('active');
+        statusMsg.classList.remove('generating');
+      }
+    }
+
+    // Fetches suggestions either from the real backend or a robust mock API fallback
+    async function fetchSuggestion(text) {
+      if (editor.selectionStart !== editor.value.length) return;
+
+      setStatus('Generating...', true);
+
+      try {
+        // Attempt real backend call to /suggest
+        const res = await fetch('/suggest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text, language: currentLanguage })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.words && data.words.length > 0 && editor.value === text) {
+            renderSuggestions(data.words);
+            setStatus('Press Enter to accept');
+            return; // Success, skip mock
+          }
+        }
+      } catch (err) {
+        // Silent fallback to mock logic
+      }
+
+      // --- Mock Logic Fallback ---
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulated network latency
+      if (editor.value !== text) return; // Discard if user kept typing
+
+      const lastToken = text.split(/\s+/).pop().toLowerCase();
+      const endsWithSpace = /\s$/.test(text);
+
+      const mockDict = {
+        tanglish: [
+          "romba", "nalla", "super", "machi", "bro", "irukken", "varan",
+          "paarkalam", "saaptaacha", "vanga", "poitu", "vazhi", "oru"
+        ],
+        tenglish: [
+          "kuda", "kadha", "nenu", "undhi", "inka", "repu", "malla",
+          "chesthunna", "baaga", "ekkada", "eppudu", "cheppu", "oka"
+        ]
+      };
+      const dict = mockDict[currentLanguage] || mockDict.tanglish;
+
+      let suggestions = [];
+
+      if (endsWithSpace) {
+        // Suggest 3 random next words
+        suggestions = dict.sort(() => 0.5 - Math.random()).slice(0, 3);
+      } else {
+        // Try to complete the current partial word
+        suggestions = dict.filter(w => w.startsWith(lastToken) && w !== lastToken).slice(0, 3);
+      }
+
+      if (suggestions.length > 0) {
+        renderSuggestions(suggestions);
+        setStatus('Press Enter to accept');
+      } else {
+        clearSuggestions();
+        setStatus('Ready');
+      }
+    }
+
+    // Initialize
+    updateOverlay();
+    editor.focus();
+
+  </script>
+</body>
+
+</html>
