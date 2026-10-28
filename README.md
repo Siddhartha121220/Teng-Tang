@@ -18,7 +18,6 @@ Mainstream keyboards are trained on English or on native-script Telugu/Tamil, so
 - [Repository layout](#repository-layout)
 - [Building from source](#building-from-source)
 - [Privacy](#privacy)
-- [Team](#team)
 - [License](#license)
 
 ---
@@ -225,16 +224,6 @@ python3 gboard_dict/make_gboard_zip.py app/models/tenglish/tenglish_meta.json Te
 - The training data is **private chat messages**. Raw exports, cleaned datasets, trained models and anything derived from them (dictionaries, word lists) are excluded from this repository via `.gitignore`.
 - The keyboard runs **entirely on the phone** and has no internet permission; what you type and what it learns never leave the device.
 - Before sharing any build, check its word lists for personal names.
-
----
-
-## Team
-
-| Reg. no. | Name |
-|---|---|
-| CB.SC.U4CSE23507 | Anuj A |
-| CB.SC.U4CSE23514 | G Siddhartha |
-| CB.SC.U4CSE23567 | KSS Karthik |
 
 ---
 
