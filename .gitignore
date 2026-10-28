@@ -24,3 +24,7 @@ __pycache__/
 .ipynb_checkpoints/
 .vscode/
 .idea/
+
+# release assets (uploaded to GitHub Releases, not committed)
+release/
+*.apk
